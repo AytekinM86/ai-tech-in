@@ -86,15 +86,19 @@
         let selectedFiles = [];
         let recognition = null;
         let isListening = false;
+        let voiceMode = false;
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('open');
-            document.getElementById('overlay').classList.toggle('open');
-        }
-
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('open');
-            document.getElementById('overlay').classList.remove('open');
+        function speak(text) {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.lang = 'az-AZ';
+            utter.rate = 1;
+            utter.pitch = 1;
+            const voices = window.speechSynthesis.getVoices();
+            const azVoice = voices.find(v => v.lang.startsWith('az'));
+            if (azVoice) utter.voice = azVoice;
+            window.speechSynthesis.speak(utter);
         }
 
         function toggleMic() {
@@ -106,6 +110,7 @@
                 recognition.stop();
                 return;
             }
+            voiceMode = true;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SpeechRecognition();
             recognition.lang = 'az-AZ';
@@ -119,6 +124,7 @@
             recognition.onresult = (event) => {
                 const text = event.results[0][0].transcript;
                 document.getElementById('msgInput').value = text;
+                sendMsg();
             };
             recognition.onend = () => {
                 isListening = false;
@@ -126,6 +132,16 @@
                 document.getElementById('micBtn').textContent = '🎤';
             };
             recognition.start();
+        }
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('open');
+            document.getElementById('overlay').classList.toggle('open');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('overlay').classList.remove('open');
         }
 
         function renderSidebar() {
@@ -251,6 +267,11 @@
             chats[currentChat].messages.push({ role: 'assistant', content: data.response });
             addBubble('assistant', data.response);
             saveChats();
+
+            if (voiceMode) {
+                speak(data.response);
+                voiceMode = false;
+            }
 
             selectedFiles = [];
             renderFilePreview();
