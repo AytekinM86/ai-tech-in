@@ -57,7 +57,7 @@
         <div class="file-preview" id="filePreview"></div>
         <div class="input-row">
             <label class="icon-btn" for="fileInput">📎</label>
-            <input type="file" id="fileInput" multiple accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFiles()">
+            <input type="file" id="fileInput" multiple accept=".pdf,.txt,.jpg,.jpeg,.png,.webp,.heic,.heif" style="display:none" onchange="handleFiles()">
             <input class="msg-input" type="text" id="msgInput" placeholder="Mesajınızı yazın..." onkeydown="if(event.key==='Enter') sendMsg()">
             <button class="icon-btn" id="micBtn" onclick="toggleMic()">🎤</button>
             <button class="send-btn" onclick="sendMsg()">➤</button>
