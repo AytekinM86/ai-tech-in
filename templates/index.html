@@ -2,78 +2,65 @@
 <html lang="az">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>AI-Tech-In</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 260px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 16px; transition: all 0.3s; }
-        .sidebar h2 { color: #fff; font-size: 18px; margin-bottom: 20px; }
-        .new-chat-btn { background: #2563eb; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 16px; font-size: 14px; }
-        .chat-list { flex: 1; overflow-y: auto; }
-        .chat-item { padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ccc; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
-        .chat-item:hover { background: #2a2a2a; }
-        .chat-item.active { background: #2563eb22; color: #fff; }
-        .chat-item .del { cursor: pointer; font-size: 12px; opacity: 0.5; margin-left: 6px; }
-        .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        html, body { height: 100%; }
+        body { font-family: Arial, sans-serif; background: #0f0f0f; color: #e0e0e0; display: flex; flex-direction: column; height: 100dvh; }
         .header { padding: 12px 16px; border-bottom: 1px solid #333; background: #1a1a1a; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
         .header h1 { font-size: 18px; color: #fff; }
-        .menu-btn { display: none; background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; flex-shrink: 0; }
-        .messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
-        .message { max-width: 80%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+        .menu-btn { background: none; border: none; color: #fff; font-size: 22px; cursor: pointer; }
+        .messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+        .message { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
         .user-msg { background: #2563eb; color: #fff; align-self: flex-end; border-radius: 12px 12px 4px 12px; }
         .bot-msg { background: #252525; color: #e0e0e0; align-self: flex-start; border-radius: 12px 12px 12px 4px; }
-        .input-area { padding: 12px 16px; border-top: 1px solid #333; background: #1a1a1a; flex-shrink: 0; }
+        .typing { color: #888; font-size: 13px; }
+        .input-area { padding: 10px 12px; border-top: 1px solid #333; background: #1a1a1a; flex-shrink: 0; }
         .file-preview { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
         .file-tag { background: #2a2a2a; border: 1px solid #444; padding: 3px 8px; border-radius: 20px; font-size: 11px; color: #aaa; display: flex; align-items: center; gap: 4px; }
         .input-row { display: flex; gap: 6px; align-items: center; }
-        .icon-btn { background: #2a2a2a; border: 1px solid #444; padding: 10px 12px; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 16px; flex-shrink: 0; }
-        .icon-btn:hover { background: #333; }
+        .icon-btn { background: #2a2a2a; border: 1px solid #444; width: 42px; height: 42px; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .icon-btn.listening { background: #ef444422; border-color: #ef4444; color: #ef4444; }
-        .msg-input { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #e0e0e0; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; min-width: 0; }
+        .msg-input { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #e0e0e0; padding: 10px 14px; border-radius: 8px; font-size: 14px; outline: none; min-width: 0; height: 42px; }
         .msg-input:focus { border-color: #2563eb; }
-        .send-btn { background: #2563eb; color: #fff; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 18px; flex-shrink: 0; }
-        .typing { color: #888; font-size: 13px; }
+        .send-btn { background: #2563eb; color: #fff; border: none; width: 42px; height: 42px; border-radius: 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
-
-        @media (max-width: 768px) {
-            .menu-btn { display: block; }
-            .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 100; width: 260px; }
-            .sidebar.open { left: 0; }
-            .overlay.open { display: block; }
-            .message { max-width: 88%; font-size: 13px; }
-            .input-area { padding: 10px 12px; }
-            .messages { padding: 12px; }
-            .icon-btn { padding: 10px 10px; font-size: 15px; }
-            .send-btn { padding: 10px 14px; font-size: 16px; }
-        }
+        .sidebar { position: fixed; left: -280px; top: 0; height: 100%; z-index: 100; width: 260px; background: #1a1a1a; border-right: 1px solid #333; display: flex; flex-direction: column; padding: 16px; transition: left 0.3s; }
+        .sidebar.open { left: 0; }
+        .overlay.open { display: block; }
+        .sidebar h2 { color: #fff; font-size: 18px; margin-bottom: 16px; }
+        .new-chat-btn { background: #2563eb; color: #fff; border: none; padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 12px; font-size: 14px; }
+        .chat-list { flex: 1; overflow-y: auto; }
+        .chat-item { padding: 10px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #ccc; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-item:hover, .chat-item.active { background: #2a2a2a; }
+        .chat-item .del { opacity: 0.5; font-size: 14px; }
+        .chat-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
     </style>
 </head>
 <body>
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
-
     <div class="sidebar" id="sidebar">
         <h2>🤖 AI-Tech-In</h2>
         <button class="new-chat-btn" onclick="newChat()">+ Yeni söhbət</button>
         <div class="chat-list" id="chatList"></div>
     </div>
 
-    <div class="main">
-        <div class="header">
-            <button class="menu-btn" onclick="toggleSidebar()">☰</button>
-            <h1>AI-Tech-In</h1>
-        </div>
-        <div class="messages" id="messages"></div>
-        <div class="input-area">
-            <div class="file-preview" id="filePreview"></div>
-            <div class="input-row">
-                <label class="icon-btn" for="fileInput">📎</label>
-                <input type="file" id="fileInput" multiple accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFiles()">
-                <input class="msg-input" type="text" id="msgInput" placeholder="Mesajınızı yazın..." onkeydown="if(event.key==='Enter') sendMsg()">
-                <button class="icon-btn" id="micBtn" onclick="toggleMic()">🎤</button>
-                <button class="send-btn" onclick="sendMsg()">➤</button>
-            </div>
+    <div class="header">
+        <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+        <h1>AI-Tech-In</h1>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="input-area">
+        <div class="file-preview" id="filePreview"></div>
+        <div class="input-row">
+            <label class="icon-btn" for="fileInput">📎</label>
+            <input type="file" id="fileInput" multiple accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFiles()">
+            <input class="msg-input" type="text" id="msgInput" placeholder="Mesajınızı yazın..." onkeydown="if(event.key==='Enter') sendMsg()">
+            <button class="icon-btn" id="micBtn" onclick="toggleMic()">🎤</button>
+            <button class="send-btn" onclick="sendMsg()">➤</button>
         </div>
     </div>
 
@@ -90,7 +77,6 @@
             window.speechSynthesis.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.lang = 'az-AZ';
-            utter.rate = 1;
             window.speechSynthesis.speak(utter);
         }
 
@@ -104,8 +90,6 @@
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
             recognition = new SR();
             recognition.lang = 'az-AZ';
-            recognition.continuous = false;
-            recognition.interimResults = false;
             recognition.onstart = () => {
                 isListening = true;
                 document.getElementById('micBtn').classList.add('listening');
@@ -154,8 +138,7 @@
                         document.getElementById('messages').innerHTML = '';
                         if (currentChat === 0) loadChat(0);
                     } else if (currentChat > i) currentChat--;
-                    saveChats();
-                    renderSidebar();
+                    saveChats(); renderSidebar();
                 };
                 div.appendChild(title);
                 div.appendChild(del);
@@ -166,8 +149,7 @@
         function newChat() {
             chats.unshift({ title: 'Yeni söhbət', messages: [] });
             currentChat = 0;
-            saveChats();
-            renderSidebar();
+            saveChats(); renderSidebar();
             document.getElementById('messages').innerHTML = '';
             closeSidebar();
         }
@@ -189,9 +171,7 @@
             msgs.scrollTop = msgs.scrollHeight;
         }
 
-        function saveChats() {
-            localStorage.setItem('chats', JSON.stringify(chats));
-        }
+        function saveChats() { localStorage.setItem('chats', JSON.stringify(chats)); }
 
         function handleFiles() {
             selectedFiles = Array.from(document.getElementById('fileInput').files);
@@ -209,10 +189,7 @@
             });
         }
 
-        function removeFile(i) {
-            selectedFiles.splice(i, 1);
-            renderFilePreview();
-        }
+        function removeFile(i) { selectedFiles.splice(i, 1); renderFilePreview(); }
 
         async function sendMsg() {
             const input = document.getElementById('msgInput');
@@ -228,17 +205,12 @@
 
             const displayMsg = msg + (selectedFiles.length > 0 ? ` 📎 ${selectedFiles.length} fayl` : '');
             chats[currentChat].messages.push({ role: 'user', content: displayMsg });
-            if (chats[currentChat].title === 'Yeni söhbət') {
-                chats[currentChat].title = (msg || 'Fayl').substring(0, 30);
-            }
+            if (chats[currentChat].title === 'Yeni söhbət') chats[currentChat].title = (msg || 'Fayl').substring(0, 30);
             addBubble('user', displayMsg);
-            saveChats();
-            renderSidebar();
+            saveChats(); renderSidebar();
 
             const typing = document.createElement('div');
-            typing.className = 'typing';
-            typing.id = 'typing';
-            typing.textContent = '...';
+            typing.className = 'typing'; typing.id = 'typing'; typing.textContent = '...';
             document.getElementById('messages').appendChild(typing);
 
             const formData = new FormData();
@@ -256,8 +228,7 @@
 
             if (voiceMode) { speak(data.response); voiceMode = false; }
 
-            selectedFiles = [];
-            renderFilePreview();
+            selectedFiles = []; renderFilePreview();
             document.getElementById('fileInput').value = '';
         }
 
