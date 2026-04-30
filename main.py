@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
-import os, uuid
+import os, base64
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "gizli-acar-123")
@@ -10,20 +10,81 @@ client = OpenAI(
     api_key=os.environ.get("HF_TOKEN")
 )
 
+def encode_image(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode("utf-8")
+
+def extract_pdf(path):
+    try:
+        import pdfplumber
+        text = ""
+        with pdfplumber.open(path) as pdf:
+            for page in pdf.pages:
+                t = page.extract_text()
+                if t:
+                    text += t
+        if text.strip():
+            return text[:4000]
+        try:
+            from pdf2image import convert_from_path
+            import pytesseract
+            images = convert_from_path(path)
+            ocr = ""
+            for img in images:
+                ocr += pytesseract.image_to_string(img, lang="aze+eng") + "\n"
+            return ocr[:4000] if ocr.strip() else "PDF oxunmadı."
+        except:
+            return "Skan PDF oxunmadı."
+    except Exception as e:
+        return f"PDF xətası: {str(e)}"
+
 @app.route("/")
 def index():
     return render_template("index.html")
 
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.json
-    message = data.get("message", "")
-    history = data.get("history", [])
+    message = request.form.get("message", "")
+    history = __import__("json").loads(request.form.get("history", "[]"))
+    files = request.files.getlist("files")
 
     messages = [{"role": "system", "content": "Sən AI-Tech-In köməkçisisən. Həmişə Azərbaycan dilində cavab ver. İstifadəçi ingilis yazsa ingilis cavab ver."}]
     for h in history:
         messages.append({"role": h["role"], "content": h["content"]})
-    messages.append({"role": "user", "content": message})
+
+    content = []
+    import tempfile
+    for f in files:
+        if f.filename == "":
+            continue
+        ext = f.filename.lower().split(".")[-1]
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
+        f.save(tmp.name)
+        if ext in ["jpg", "jpeg", "png", "webp", "gif"]:
+            b64 = encode_image(tmp.name)
+            mime = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
+            content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
+        elif ext == "pdf":
+            text = extract_pdf(tmp.name)
+            content.append({"type": "text", "text": f"PDF məzmunu:\n{text}\n\nBu məzmuna əsasən cavab ver."})
+        else:
+            try:
+                with open(tmp.name, "r", errors="ignore") as fp:
+                    text = fp.read()[:4000]
+                content.append({"type": "text", "text": f"Fayl məzmunu:\n{text}"})
+            except:
+                pass
+
+    if message:
+        content.append({"type": "text", "text": message})
+
+    if not content:
+        return jsonify({"response": "Mesaj və ya fayl göndərin."})
+
+    if len(content) == 1 and content[0]["type"] == "text":
+        messages.append({"role": "user", "content": content[0]["text"]})
+    else:
+        messages.append({"role": "user", "content": content})
 
     try:
         response = client.chat.completions.create(
