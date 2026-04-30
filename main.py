@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 from openai import OpenAI
-import os, base64
+import os, base64, json, tempfile
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "gizli-acar-123")
@@ -45,7 +45,8 @@ def index():
 @app.route("/chat", methods=["POST"])
 def chat():
     message = request.form.get("message", "")
-    history = __import__("json").loads(request.form.get("history", "[]"))
+    history_raw = request.form.get("history", "[]")
+    history = json.loads(history_raw)
     files = request.files.getlist("files")
 
     messages = [{"role": "system", "content": "Sən AI-Tech-In köməkçisisən. Həmişə Azərbaycan dilində cavab ver. İstifadəçi ingilis yazsa ingilis cavab ver."}]
@@ -53,7 +54,8 @@ def chat():
         messages.append({"role": h["role"], "content": h["content"]})
 
     content = []
-    import tempfile
+    has_image = False
+
     for f in files:
         if f.filename == "":
             continue
@@ -61,6 +63,7 @@ def chat():
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
         f.save(tmp.name)
         if ext in ["jpg", "jpeg", "png", "webp", "gif"]:
+            has_image = True
             b64 = encode_image(tmp.name)
             mime = "image/jpeg" if ext in ["jpg", "jpeg"] else f"image/{ext}"
             content.append({"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}})
@@ -87,8 +90,9 @@ def chat():
         messages.append({"role": "user", "content": content})
 
     try:
+        model = "meta-llama/Llama-3.2-11B-Vision-Instruct" if has_image else "meta-llama/Llama-3.3-70B-Instruct"
         response = client.chat.completions.create(
-            model="meta-llama/Llama-3.3-70B-Instruct",
+            model=model,
             messages=messages,
             max_tokens=1024,
         )
