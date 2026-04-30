@@ -39,6 +39,8 @@
         .send-btn:hover { background: #1d4ed8; }
         .typing { color: #888; font-size: 13px; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99; }
+        .mic-btn { background: #2a2a2a; border: 1px solid #444; padding: 10px 14px; border-radius: 8px; color: #aaa; cursor: pointer; font-size: 18px; }
+        .mic-btn.listening { background: #ef444422; border-color: #ef4444; color: #ef4444; }
 
         @media (max-width: 768px) {
             .menu-btn { display: block; }
@@ -72,6 +74,7 @@
                 <label class="attach-btn" for="fileInput">📎</label>
                 <input type="file" id="fileInput" multiple accept=".pdf,.txt,.jpg,.jpeg,.png,.webp" style="display:none" onchange="handleFiles()">
                 <input type="text" id="msgInput" placeholder="Mesajınızı yazın..." onkeydown="if(event.key==='Enter') sendMsg()">
+                <button class="mic-btn" id="micBtn" onclick="toggleMic()">🎤</button>
                 <button class="send-btn" onclick="sendMsg()">➤</button>
             </div>
         </div>
@@ -81,6 +84,8 @@
         let chats = JSON.parse(localStorage.getItem('chats') || '[]');
         let currentChat = null;
         let selectedFiles = [];
+        let recognition = null;
+        let isListening = false;
 
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
@@ -92,18 +97,47 @@
             document.getElementById('overlay').classList.remove('open');
         }
 
+        function toggleMic() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('Brauzeriniz mikrofonu dəstəkləmir.');
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+                return;
+            }
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'az-AZ';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.onstart = () => {
+                isListening = true;
+                document.getElementById('micBtn').classList.add('listening');
+                document.getElementById('micBtn').textContent = '🔴';
+            };
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                document.getElementById('msgInput').value = text;
+            };
+            recognition.onend = () => {
+                isListening = false;
+                document.getElementById('micBtn').classList.remove('listening');
+                document.getElementById('micBtn').textContent = '🎤';
+            };
+            recognition.start();
+        }
+
         function renderSidebar() {
             const list = document.getElementById('chatList');
             list.innerHTML = '';
             chats.forEach((c, i) => {
                 const div = document.createElement('div');
                 div.className = 'chat-item' + (currentChat === i ? ' active' : '');
-
                 const title = document.createElement('span');
                 title.className = 'chat-title';
                 title.textContent = c.title || 'Söhbət ' + (i+1);
                 title.onclick = () => { loadChat(i); closeSidebar(); };
-
                 const del = document.createElement('span');
                 del.className = 'del';
                 del.textContent = '🗑';
@@ -120,7 +154,6 @@
                     saveChats();
                     renderSidebar();
                 };
-
                 div.appendChild(title);
                 div.appendChild(del);
                 list.appendChild(div);
